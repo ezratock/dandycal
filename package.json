@@ -1,0 +1,27 @@
+{
+	"name": "dandyhacks2025",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"start": "node src/index.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ezratock/dandycal.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs",
+	"bugs": {
+		"url": "https://github.com/ezratock/dandycal/issues"
+	},
+	"homepage": "https://github.com/ezratock/dandycal#readme",
+	"dependencies": {
+		"@google/genai": "^1.29.1",
+		"dotenv": "^17.2.3",
+		"zod": "^3.25.76",
+		"zod-to-json-schema": "^3.24.6"
+	}
+}
