@@ -1,88 +1,93 @@
-import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+// ---------- JSON schema for structured output ----------
 
-// ---------- Zod schema for structured output ----------
-
-const calendarEventSchema = z.object({
-	action: z
-		.literal("TEMPLATE")
-		.describe("Always 'TEMPLATE' for Google Calendar template URLs."),
-	text: z.string().min(1).describe("Short event title (no emojis)."),
-	dates: z
-		.string()
-		.min(1)
-		.describe(
-			"Google Calendar 'dates' parameter. " +
-			"Timed example: 20251231T193000Z/20251231T223000Z. " +
-			"All-day example: 20251231/20260101 (end date is last day + 1)."
-		),
-	ctz: z
-		.string()
-		.nullable()
-		.optional()
-		.describe("IANA timezone name, e.g. 'America/New_York'."),
-	details: z
-		.string()
-		.nullable()
-		.optional()
-		.describe("Longer description / notes for the event."),
-	location: z
-		.string()
-		.nullable()
-		.optional()
-		.describe("Human-readable venue or address."),
-	crm: z
-		.enum(["AVAILABLE", "BUSY", "BLOCKING"])
-		.nullable()
-		.optional()
-		.describe(
-			"Calendar availability: AVAILABLE, BUSY, or BLOCKING (out of office)."
-		),
-	trp: z
-		.boolean()
-		.nullable()
-		.optional()
-		.describe(
-			"If true, show as busy; if false, show as available; null if not sure."
-		),
-	sprop: z
-		.object({
-			website: z
-				.string()
-				.nullable()
-				.optional()
-				.describe("Source website URL for the event."),
-			name: z
-				.string()
-				.nullable()
-				.optional()
-				.describe("Source site or organizer name."),
-		})
-		.nullable()
-		.optional()
-		.describe("Event source properties."),
-	add: z
-		.array(z.string())
-		.optional()
-		.describe("List of guest email addresses."),
-	src: z
-		.string()
-		.nullable()
-		.optional()
-		.describe("Email of the calendar to add this event to (if not default)."),
-	recur: z
-		.string()
-		.nullable()
-		.optional()
-		.describe("RRULE string, e.g. 'RRULE:FREQ=DAILY'."),
-	vcon: z
-		.enum(["meet"])
-		.nullable()
-		.optional()
-		.describe("Set to 'meet' to include a Google Meet link."),
-});
-
-const calendarEventJsonSchema = zodToJsonSchema(calendarEventSchema);
+const calendarEventJsonSchema = {
+	type: "object",
+	properties: {
+		action: {
+			type: "string",
+			description: "Always 'TEMPLATE' for Google Calendar template URLs."
+		},
+		text: {
+			type: "string",
+			description: "Short event title (no emojis)."
+		},
+		dates: {
+			type: "string",
+			description:
+				"Google Calendar 'dates' parameter. " +
+				"Timed example: 20251231T193000Z/20251231T223000Z. " +
+				"All-day example: 20251231/20260101 (end date is last day + 1)."
+		},
+		ctz: {
+			type: "string",
+			nullable: true,
+			description: "IANA timezone name, e.g. 'America/New_York'."
+		},
+		details: {
+			type: "string",
+			nullable: true,
+			description: "Longer description / notes for the event."
+		},
+		location: {
+			type: "string",
+			nullable: true,
+			description: "Human-readable venue or address."
+		},
+		crm: {
+			type: "string",
+			nullable: true,
+			enum: ["AVAILABLE", "BUSY", "BLOCKING"],
+			description:
+				"Calendar availability: AVAILABLE, BUSY, or BLOCKING (out of office)."
+		},
+		trp: {
+			type: "boolean",
+			nullable: true,
+			description:
+				"If true, show as busy; if false, show as available; null if not sure."
+		},
+		sprop: {
+			type: "object",
+			nullable: true,
+			properties: {
+				website: {
+					type: "string",
+					nullable: true,
+					description: "Source website URL for the event."
+				},
+				name: {
+					type: "string",
+					nullable: true,
+					description: "Source site or organizer name."
+				}
+			},
+			required: []
+		},
+		add: {
+			type: "array",
+			items: { type: "string" },
+			description: "List of guest email addresses."
+		},
+		src: {
+			type: "string",
+			nullable: true,
+			description:
+				"Email of the calendar to add this event to (if not default)."
+		},
+		recur: {
+			type: "string",
+			nullable: true,
+			description: "RRULE string, e.g. 'RRULE:FREQ=DAILY'."
+		},
+		vcon: {
+			type: "string",
+			nullable: true,
+			enum: ["meet"],
+			description: "Set to 'meet' to include a Google Meet link."
+		}
+	},
+	required: ["action", "text", "dates"]
+};
 
 // ---------- Core function: image → structured JSON → URL ----------
 
@@ -95,13 +100,11 @@ const GEMINI_API_URL =
  * and build a Google Calendar template URL.
  *
  * @param {string} base64Image
- *   Base64-encoded image data. Can be:
- *   - raw base64: "iVBORw0KGgoAAAANSUhEUg..."
- *   - or a data URL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg..."
+ *   Base64-encoded image data (raw base64, not a data URL).
  * @param {string} apiKey
- *   Gemini API key (store securely in your extension, not in repo).
+ *   Gemini API key.
  * @param {string} [mimeType='image/png']
- * @returns {Promise<{ event: import("zod").infer<typeof calendarEventSchema>, url: string }>}
+ * @returns {Promise<{ event: any, url: string }>}
  */
 export async function createCalendarUrlFromImage(
 	base64Image,
@@ -112,7 +115,6 @@ export async function createCalendarUrlFromImage(
 		throw new Error("Gemini API key is required");
 	}
 
-	// Support data URLs: "data:image/png;base64,AAAA..."
 	if (base64Image.startsWith("data:")) {
 		const commaIndex = base64Image.indexOf(",");
 		if (commaIndex !== -1) {
@@ -136,7 +138,7 @@ export async function createCalendarUrlFromImage(
 		"- If some optional fields aren't present, omit them or use null where",
 		"  allowed.",
 		"- 'add' should be a list of visible email addresses; otherwise [].",
-		"Return ONLY valid JSON that matches the response schema.",
+		"Return ONLY valid JSON that matches the response schema."
 	].join("\n");
 
 	const requestBody = {
@@ -147,18 +149,17 @@ export async function createCalendarUrlFromImage(
 					{
 						inlineData: {
 							mimeType,
-							data: base64Image,
-						},
+							data: base64Image
+						}
 					},
-					{ text: prompt },
-				],
-			},
+					{ text: prompt }
+				]
+			}
 		],
 		generationConfig: {
-			// Structured output: tell Gemini to return pure JSON
 			responseMimeType: "application/json",
-			responseSchema: calendarEventJsonSchema,
-		},
+			responseSchema: calendarEventJsonSchema
+		}
 	};
 
 	const response = await fetch(
@@ -166,9 +167,9 @@ export async function createCalendarUrlFromImage(
 		{
 			method: "POST",
 			headers: {
-				"Content-Type": "application/json",
+				"Content-Type": "application/json"
 			},
-			body: JSON.stringify(requestBody),
+			body: JSON.stringify(requestBody)
 		}
 	);
 
@@ -192,9 +193,17 @@ export async function createCalendarUrlFromImage(
 		throw new Error("Empty or missing text response from Gemini");
 	}
 
-	// Validate against Zod schema
-	const parsed = JSON.parse(rawJson);
-	const event = calendarEventSchema.parse(parsed);
+	const event = JSON.parse(rawJson);
+
+	// Light sanity check instead of full Zod validation
+	if (
+		!event ||
+		typeof event !== "object" ||
+		typeof event.text !== "string" ||
+		typeof event.dates !== "string"
+	) {
+		throw new Error("Invalid event structure from Gemini");
+	}
 
 	const url = buildGoogleCalendarUrl(event);
 	return { event, url };
@@ -205,19 +214,17 @@ export async function createCalendarUrlFromImage(
 /**
  * Build the Google Calendar event creation URL from structured params.
  *
- * @param {import("zod").infer<typeof calendarEventSchema>} event
+ * @param {any} event
  * @returns {string}
  */
 export function buildGoogleCalendarUrl(event) {
 	const baseUrl = "https://calendar.google.com/calendar/render";
 	const query = new URLSearchParams();
 
-	// Required
 	query.set("action", event.action || "TEMPLATE");
 	query.set("text", event.text);
 	query.set("dates", event.dates);
 
-	// Optional
 	if (event.ctz) query.set("ctz", event.ctz);
 	if (event.details) query.set("details", event.details);
 	if (event.location) query.set("location", event.location);
@@ -236,7 +243,7 @@ export function buildGoogleCalendarUrl(event) {
 		}
 	}
 
-	if (event.add && event.add.length > 0) {
+	if (Array.isArray(event.add) && event.add.length > 0) {
 		query.set("add", event.add.join(","));
 	}
 

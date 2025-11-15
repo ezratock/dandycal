@@ -1,6 +1,3 @@
-import { calUrl } from 'lib/calUrlFromImage.js';
-import { createCalendarUrlFromImage } from '../../calUrlFromImage.js';
-
 (function() {
 	// Prevent multiple instances
 	if (window.screenshotSelectorActive) return;

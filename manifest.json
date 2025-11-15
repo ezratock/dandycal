@@ -5,14 +5,17 @@
 	"description": "Capture screenshots to create calendar events",
 	"permissions": [
 		"activeTab",
+		"tabs",
 		"scripting",
 		"storage"
 	],
 	"host_permissions": [
+		"<all_urls>",
 		"https://generativelanguage.googleapis.com/*"
 	],
 	"background": {
-		"service_worker": "src/extension/background.js"
+		"service_worker": "./src/extension/background.js",
+		"type": "module"
 	},
 	"action": {
 		"default_popup": "src/extension/popup.html",

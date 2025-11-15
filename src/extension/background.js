@@ -1,4 +1,5 @@
-import { createCalendarUrlFromImage } from 'src/lib/calUrlFromImage.js';
+// src/extension/background.js
+import { createCalendarUrlFromImage } from '../lib/calUrlFromImage.js';
 
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 	if (request.action === "captureVisible") {
@@ -9,7 +10,6 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 	}
 
 	if (request.action === "createCalendarEvent") {
-		// Get API key from storage
 		chrome.storage.sync.get(['geminiApiKey'], (result) => {
 			const apiKey = result.geminiApiKey;
 
