@@ -12,7 +12,7 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
 		// Inject the selection overlay
 		await chrome.scripting.executeScript({
 			target: { tabId: tab.id },
-			files: ['./src/extension/content.js']
+			files: ['src/extension/content.js']
 		});
 
 		// Close the popup so user can see the page

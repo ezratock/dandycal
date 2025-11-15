@@ -1,22 +1,5 @@
-// calendar-from-image.js
-import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
-import "dotenv/config";
-
-// ---------- Gemini client ----------
-
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-	throw new Error(
-		"GEMINI_API_KEY is not set. Add it to your environment or .env file."
-	);
-}
-
-const ai = new GoogleGenAI({ apiKey });
 
 // ---------- Zod schema for structured output ----------
 
@@ -24,10 +7,7 @@ const calendarEventSchema = z.object({
 	action: z
 		.literal("TEMPLATE")
 		.describe("Always 'TEMPLATE' for Google Calendar template URLs."),
-	text: z
-		.string()
-		.min(1)
-		.describe("Short event title (no emojis)."),
+	text: z.string().min(1).describe("Short event title (no emojis)."),
 	dates: z
 		.string()
 		.min(1)
@@ -106,23 +86,45 @@ const calendarEventJsonSchema = zodToJsonSchema(calendarEventSchema);
 
 // ---------- Core function: image → structured JSON → URL ----------
 
+const GEMINI_API_URL =
+	"https://generativelanguage.googleapis.com/v1beta/models" +
+	"/gemini-2.5-flash:generateContent";
+
 /**
  * Take an event image, extract calendar fields via Gemini structured output,
  * and build a Google Calendar template URL.
  *
- * @param {string} imagePath
- * @returns {Promise<{ event: z.infer<typeof calendarEventSchema>, url: string }>}
+ * @param {string} base64Image
+ *   Base64-encoded image data. Can be:
+ *   - raw base64: "iVBORw0KGgoAAAANSUhEUg..."
+ *   - or a data URL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg..."
+ * @param {string} apiKey
+ *   Gemini API key (store securely in your extension, not in repo).
+ * @param {string} [mimeType='image/png']
+ * @returns {Promise<{ event: import("zod").infer<typeof calendarEventSchema>, url: string }>}
  */
-export async function createCalendarUrlFromImage(imagePath) {
-	const absPath = path.resolve(imagePath);
-	const imageBytes = await fs.readFile(absPath);
-	const base64Image = imageBytes.toString("base64");
-	const mimeType = guessMimeTypeFromPath(absPath);
+export async function createCalendarUrlFromImage(
+	base64Image,
+	apiKey,
+	mimeType = "image/png"
+) {
+	if (!apiKey) {
+		throw new Error("Gemini API key is required");
+	}
+
+	// Support data URLs: "data:image/png;base64,AAAA..."
+	if (base64Image.startsWith("data:")) {
+		const commaIndex = base64Image.indexOf(",");
+		if (commaIndex !== -1) {
+			base64Image = base64Image.slice(commaIndex + 1);
+		}
+	}
 
 	const prompt = [
 		"You are given an image containing a calendar event.",
 		"Extract the event details and populate the JSON object defined by the",
-		"responseJsonSchema. Follow these rules:",
+		"responseSchema. Follow these rules:",
+		"- 'action': always 'TEMPLATE'.",
 		"- 'text': short event title.",
 		"- 'dates': use Google Calendar 'dates' format:",
 		"  * For timed events, convert to UTC and use",
@@ -134,10 +136,10 @@ export async function createCalendarUrlFromImage(imagePath) {
 		"- If some optional fields aren't present, omit them or use null where",
 		"  allowed.",
 		"- 'add' should be a list of visible email addresses; otherwise [].",
+		"Return ONLY valid JSON that matches the response schema.",
 	].join("\n");
 
-	const response = await ai.models.generateContent({
-		model: "gemini-2.5-flash",
+	const requestBody = {
 		contents: [
 			{
 				role: "user",
@@ -152,15 +154,47 @@ export async function createCalendarUrlFromImage(imagePath) {
 				],
 			},
 		],
-		config: {
+		generationConfig: {
+			// Structured output: tell Gemini to return pure JSON
 			responseMimeType: "application/json",
-			responseJsonSchema: calendarEventJsonSchema,
+			responseSchema: calendarEventJsonSchema,
 		},
-	});
+	};
 
-	// Gemini returns a JSON string that already conforms to the schema.
-	const rawJson = response.text;
-	const event = calendarEventSchema.parse(JSON.parse(rawJson));
+	const response = await fetch(
+		`${GEMINI_API_URL}?key=${encodeURIComponent(apiKey)}`,
+		{
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(requestBody),
+		}
+	);
+
+	if (!response.ok) {
+		const errorText = await response.text().catch(() => "");
+		throw new Error(
+			`Gemini API error: ${response.status} ${response.statusText} ${errorText || ""
+			}`
+		);
+	}
+
+	const data = await response.json();
+
+	const rawJson =
+		data?.candidates?.[0]?.content?.parts
+			?.map((p) => p.text || "")
+			.join("")
+			.trim() || "";
+
+	if (!rawJson) {
+		throw new Error("Empty or missing text response from Gemini");
+	}
+
+	// Validate against Zod schema
+	const parsed = JSON.parse(rawJson);
+	const event = calendarEventSchema.parse(parsed);
 
 	const url = buildGoogleCalendarUrl(event);
 	return { event, url };
@@ -168,18 +202,10 @@ export async function createCalendarUrlFromImage(imagePath) {
 
 // ---------- Helpers ----------
 
-function guessMimeTypeFromPath(filePath) {
-	const ext = path.extname(filePath).toLowerCase();
-	if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
-	if (ext === ".png") return "image/png";
-	if (ext === ".webp") return "image/webp";
-	return "image/png";
-}
-
 /**
  * Build the Google Calendar event creation URL from structured params.
  *
- * @param {z.infer<typeof calendarEventSchema>} event
+ * @param {import("zod").infer<typeof calendarEventSchema>} event
  * @returns {string}
  */
 export function buildGoogleCalendarUrl(event) {
@@ -219,29 +245,4 @@ export function buildGoogleCalendarUrl(event) {
 	if (event.vcon) query.set("vcon", event.vcon);
 
 	return `${baseUrl}?${query.toString()}`;
-}
-
-// ---------- Simple CLI usage ----------
-//
-//   node calendar-from-image.js path/to/event-flyer.png
-//
-
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-	const imageArg = process.argv[2];
-	if (!imageArg) {
-		console.error("Usage: node calendar-from-image.js <image-path>");
-		process.exit(1);
-	}
-
-	createCalendarUrlFromImage(imageArg)
-		.then(({ event, url }) => {
-			console.log("Structured event JSON from Gemini:");
-			console.log(JSON.stringify(event, null, 2));
-			console.log("\nGoogle Calendar URL:");
-			console.log(url);
-		})
-		.catch((err) => {
-			console.error("Error:", err.message);
-			process.exit(1);
-		});
 }

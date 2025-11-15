@@ -1,4 +1,4 @@
-import { createCalendarUrlFromImage } from "./lib/cal-url-from-image.js";
+import { createCalendarUrlFromImage } from "lib/cal-url-from-image.js";
 
 const imagePath = process.argv[2];
 

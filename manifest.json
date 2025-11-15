@@ -7,13 +7,16 @@
 		"activeTab",
 		"scripting"
 	],
+	"host_permissions": [
+		"https://generativelanguage.googleapis.com/*"
+	],
 	"background": {
-		"service_worker": "./src/extension/background.js"
+		"service_worker": "src/extension/background.js"
 	},
 	"action": {
-		"default_popup": "./src/extension/popup.html",
+		"default_popup": "src/extension/popup.html",
 		"default_icon": {
-			"16": "./src/extension/images.png"
+			"16": "src/extension/images.png"
 		}
 	},
 	"commands": {
@@ -26,6 +29,6 @@
 		}
 	},
 	"icons": {
-		"16": "./src/extension/images.png"
+		"16": "src/extension/images.png"
 	}
 }
