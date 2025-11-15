@@ -29,3 +29,25 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
 		}, 3000);
 	}
 });
+
+chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+	const statusEl = document.getElementById('status');
+	const statusText = document.getElementById('statusText');
+
+	if (message.action === 'showLoading') {
+		statusText.textContent = message.text || 'Processing...';
+		statusEl.classList.add('show', 'loading');
+	}
+
+	else if (message.action === 'hideLoading') {
+		statusEl.classList.remove('loading');
+		if (message.text) {
+			statusText.textContent = message.text;
+			setTimeout(() => {
+				statusEl.classList.remove('show');
+			}, 3000);
+		} else {
+			statusEl.classList.remove('show');
+		}
+	}
+});

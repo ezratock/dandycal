@@ -10,6 +10,13 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 	}
 
 	if (request.action === "createCalendarEvent") {
+		chrome.action.openPopup();
+
+		chrome.runtime.sendMessage({
+			action: 'showLoading',
+			text: 'Processing screenshot...'
+		});
+
 		chrome.storage.sync.get(['geminiApiKey'], (result) => {
 			const apiKey = result.geminiApiKey;
 
@@ -39,7 +46,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 		return true;
 	}
 
-	if (message.action === 'screenshotComplete') {
+	if (request.action === 'openPopup') {
 		chrome.action.openPopup();
 	}
 });
