@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 320px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    
+    p {
+      margin: 0 0 20px 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    button {
+      width: 100%;
+      padding: 14px;
+      background: white;
+      color: #667eea;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .status.show {
+      display: block;
+    }
+    
+    .shortcut {
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      font-size: 12px;
+      text-align: center;
+    }
+    
+    .shortcut code {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📸 Screenshot</h1>
+    <p>Capture your screen for calendar events</p>
+    
+    <button id="captureBtn">Take Screenshot</button>
+    
+    <div id="status" class="status"></div>
+    
+    <div class="shortcut">
+      Shortcut: <code>Ctrl+Shift+S</code>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
