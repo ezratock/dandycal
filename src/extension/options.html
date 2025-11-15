@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 500px;
+      padding: 30px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      color: #667eea;
+    }
+    
+    p {
+      margin: 0 0 24px 0;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: monospace;
+      transition: border-color 0.2s;
+    }
+    
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+    }
+    
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status.show {
+      display: block;
+    }
+    
+    .help {
+      margin-top: 20px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .help a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    
+    .help a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚙️ Extension Settings</h1>
+    <p>Configure your Gemini API key for calendar event extraction</p>
+    
+    <label for="apiKey">Gemini API Key</label>
+    <input 
+      type="text" 
+      id="apiKey" 
+      placeholder="Enter your Gemini API key"
+      autocomplete="off"
+    >
+    
+    <button id="saveBtn">Save Settings</button>
+    
+    <div id="status" class="status"></div>
+    
+    <div class="help">
+      <strong>Need an API key?</strong><br>
+      Get your free Gemini API key from 
+      <a href="https://aistudio.google.com/app/apikey" target="_blank">
+        Google AI Studio
+      </a>
+    </div>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html>

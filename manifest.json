@@ -5,7 +5,8 @@
 	"description": "Capture screenshots to create calendar events",
 	"permissions": [
 		"activeTab",
-		"scripting"
+		"scripting",
+		"storage"
 	],
 	"host_permissions": [
 		"https://generativelanguage.googleapis.com/*"
@@ -19,6 +20,7 @@
 			"16": "src/extension/images.png"
 		}
 	},
+	"options_page": "src/extension/options.html",
 	"commands": {
 		"_execute_action": {
 			"suggested_key": {
