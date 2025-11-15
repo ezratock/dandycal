@@ -122,10 +122,25 @@ export async function createCalendarUrlFromImage(
 		}
 	}
 
+	// Get current date in a readable format for the AI
+	const today = new Date();
+	const dateStr = today.toLocaleDateString('en-US', { 
+		weekday: 'long', 
+		year: 'numeric', 
+		month: 'long', 
+		day: 'numeric' 
+	});
+
 	const prompt = [
 		"You are given an image containing a calendar event.",
 		"Extract the event details and populate the JSON object defined by the",
 		"responseSchema. Follow these rules:",
+		"",
+		`TODAY'S DATE: ${dateStr}`,
+		"Use this date to resolve relative dates like 'this Friday', 'next week', etc.",
+		"If no year or month are specified assume the event is upcoming relative to current data",
+		"Do not hallucinate dates or details not present in the image.",
+		"",
 		"- 'action': always 'TEMPLATE'.",
 		"- 'text': short event title.",
 		"- 'dates': use Google Calendar 'dates' format:",
