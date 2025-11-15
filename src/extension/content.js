@@ -198,5 +198,6 @@
 		selectionBox.remove();
 		instruction.remove();
 		window.screenshotSelectorActive = false;
+		chrome.runtime.sendMessage({ action: 'screenshotComplete' });
 	}
 })();

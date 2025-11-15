@@ -38,4 +38,8 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 		chrome.tabs.create({ url: request.url });
 		return true;
 	}
+
+	if (message.action === 'screenshotComplete') {
+		chrome.action.openPopup();
+	}
 });
