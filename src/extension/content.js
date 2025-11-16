@@ -12,46 +12,17 @@
 
     const overlay = document.createElement('div');
     overlay.id = 'screenshot-overlay';
-    overlay.style.cssText = `
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.4);
-    cursor: crosshair;
-    z-index: 2147483646;
-  `;
+    overlay.style.cssText = `  
+    position: fixed;    inset: 0;    width: 100vw;    height: 100vh;    background: rgba(0, 0, 0, 0.4);    cursor: crosshair;    z-index: 2147483646;  `;
 
     const selectionBox = document.createElement('div');
     selectionBox.id = 'screenshot-selection';
-    selectionBox.style.cssText = `
-    position: fixed;
-    border: 2px solid #667eea;
-    background: rgba(102, 126, 234, 0.1);
-    display: none;
-    z-index: 2147483647;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-    pointer-events: none;
-  `;
+    selectionBox.style.cssText = `  
+    position: fixed;    border: 2px solid #667eea;    background: rgba(102, 126, 234, 0.1);    display: none;    z-index: 2147483647;    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);    pointer-events: none;  `;
 
     const instruction = document.createElement('div');
-    instruction.style.cssText = `
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: white;
-    color: #667eea;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
-      Roboto, sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    z-index: 2147483647;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    pointer-events: none;
-  `;
+    instruction.style.cssText = `  
+    position: fixed;    top: 20px;    left: 50%;    transform: translateX(-50%);    background: white;    color: #667eea;    padding: 12px 24px;    border-radius: 8px;    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',      Roboto, sans-serif;    font-size: 14px;    font-weight: 600;    z-index: 2147483647;    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);    pointer-events: none;  `;
     instruction.textContent =
         'Hover to select element • Click to capture • Drag to draw region • ' +
         'ESC to cancel';
@@ -108,10 +79,7 @@
     }
 
     /**
-     * Determine if an element should be processed as text or as an image.
-     * Returns true if the element is primarily textual, false if it should be captured as an image.
-     */
-    function isTextualElement(element) {
+     * Determine if an element should be processed as text or as an image.     * Returns true if the element is primarily textual, false if it should be captured as an image.     */    function isTextualElement(element) {
         if (!element) return false;
 
         // List of inherently textual tags
@@ -200,14 +168,14 @@
         currentElement = el;
         const rect = el.getBoundingClientRect();
 
-		const padding = 12;
+        const padding = 12;
 
-		selectionBox.style.display = 'block';
-		selectionBox.style.left = `${rect.left - padding}px`;
-		selectionBox.style.top = `${rect.top - padding}px`;
-		selectionBox.style.width = `${rect.width + padding * 2}px`;
-		selectionBox.style.height = `${rect.height + padding * 2}px`;
-	}
+        selectionBox.style.display = 'block';
+        selectionBox.style.left = `${rect.left - padding}px`;
+        selectionBox.style.top = `${rect.top - padding}px`;
+        selectionBox.style.width = `${rect.width + padding * 2}px`;
+        selectionBox.style.height = `${rect.height + padding * 2}px`;
+    }
 
     async function captureSelection(x, y, width, height) {
         console.log('Starting screen capture...');
@@ -278,72 +246,72 @@
         return createRes.url;
     }
 
-	let scrollTimeout = null;
-	let lastMouseX = 0;
-	let lastMouseY = 0;
+    let scrollTimeout = null;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
 
-	function onScroll() {
-		// If we have a current element being highlighted, update its position immediately
-		if (currentElement && !isDragSelection && selectionBox.style.display !== 'none') {
-			// Check if mouse is now over a different element due to scrolling
-			const elementAtMouse = getElementAtPoint(lastMouseX, lastMouseY);
+    function onScroll() {
+        // If we have a current element being highlighted, update its position immediately
+        if (currentElement && !isDragSelection && selectionBox.style.display !== 'none') {
+            // Check if mouse is now over a different element due to scrolling
+            const elementAtMouse = getElementAtPoint(lastMouseX, lastMouseY);
 
-			if (elementAtMouse && elementAtMouse !== currentElement) {
-				// Element changed due to scroll - use transition for smooth switch
-				currentElement = elementAtMouse;
+            if (elementAtMouse && elementAtMouse !== currentElement) {
+                // Element changed due to scroll - use transition for smooth switch
+                currentElement = elementAtMouse;
 
-				// Enable transition
-				selectionBox.style.transition = 'all 0.15s ease-in-out';
+                // Enable transition
+                selectionBox.style.transition = 'all 0.15s ease-in-out';
 
-				// Force reflow to ensure transition is registered before changing position
-				void selectionBox.offsetHeight;
+                // Force reflow to ensure transition is registered before changing position
+                void selectionBox.offsetHeight;
 
-				// Now apply new position with transition
-				const rect = elementAtMouse.getBoundingClientRect();
-				const padding = 12;
+                // Now apply new position with transition
+                const rect = elementAtMouse.getBoundingClientRect();
+                const padding = 12;
 
-				selectionBox.style.left = `${rect.left - padding}px`;
-				selectionBox.style.top = `${rect.top - padding}px`;
-				selectionBox.style.width = `${rect.width + padding * 2}px`;
-				selectionBox.style.height = `${rect.height + padding * 2}px`;
-			} else {
-				// Same element, just repositioned - no transition for immediate feedback
-				selectionBox.style.transition = 'none';
+                selectionBox.style.left = `${rect.left - padding}px`;
+                selectionBox.style.top = `${rect.top - padding}px`;
+                selectionBox.style.width = `${rect.width + padding * 2}px`;
+                selectionBox.style.height = `${rect.height + padding * 2}px`;
+            } else {
+                // Same element, just repositioned - no transition for immediate feedback
+                selectionBox.style.transition = 'none';
 
-				const rect = currentElement.getBoundingClientRect();
-				const padding = 12;
+                const rect = currentElement.getBoundingClientRect();
+                const padding = 12;
 
-				selectionBox.style.left = `${rect.left - padding}px`;
-				selectionBox.style.top = `${rect.top - padding}px`;
-				selectionBox.style.width = `${rect.width + padding * 2}px`;
-				selectionBox.style.height = `${rect.height + padding * 2}px`;
+                selectionBox.style.left = `${rect.left - padding}px`;
+                selectionBox.style.top = `${rect.top - padding}px`;
+                selectionBox.style.width = `${rect.width + padding * 2}px`;
+                selectionBox.style.height = `${rect.height + padding * 2}px`;
 
-				// Re-enable transitions after a short delay (when scrolling stops)
-				if (scrollTimeout) {
-					clearTimeout(scrollTimeout);
-				}
-				scrollTimeout = setTimeout(() => {
-					selectionBox.style.transition = 'all 0.15s ease-in-out';
-				}, 150);
-			}
-		}
-	}
+                // Re-enable transitions after a short delay (when scrolling stops)
+                if (scrollTimeout) {
+                    clearTimeout(scrollTimeout);
+                }
+                scrollTimeout = setTimeout(() => {
+                    selectionBox.style.transition = 'all 0.15s ease-in-out';
+                }, 150);
+            }
+        }
+    }
 
-	function cleanup() {
-		if (scrollTimeout) {
-			clearTimeout(scrollTimeout);
-		}
-		try {
-			overlay.remove();
-			selectionBox.remove();
-			instruction.remove();
-		} catch (e) {
-			// ignore
-		}
-		document.removeEventListener('keydown', onKeydown, true);
-		document.removeEventListener('scroll', onScroll, true);
-		window.screenshotSelectorActive = false;
-	}
+    function cleanup() {
+        if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+        }
+        try {
+            overlay.remove();
+            selectionBox.remove();
+            instruction.remove();
+        } catch (e) {
+            // ignore
+        }
+        document.removeEventListener('keydown', onKeydown, true);
+        document.removeEventListener('scroll', onScroll, true);
+        window.screenshotSelectorActive = false;
+    }
 
     async function finishSelectionAndCapture(x, y, width, height) {
         try {
@@ -393,10 +361,14 @@
                 throw new Error(msg);
             }
 
-            await sendMessage({
-                action: 'openUrl',
-                url: createRes.url,
-            });
+            const { userCancelled } = await chrome.storage.local.get(['userCancelled']);
+
+            if (!userCancelled) {
+                await sendMessage({
+                    action: 'openUrl',
+                    url: createRes.url,
+                });
+            }
         } catch (error) {
             console.error('Element text capture error:', error);
         } finally {
@@ -421,13 +393,13 @@
         const x = e.clientX;
         const y = e.clientY;
 
-		lastMouseX = x;
-		lastMouseY = y;
+        lastMouseX = x;
+        lastMouseY = y;
 
-		if (isSelecting) {
-			const dx = x - startX;
-			const dy = y - startY;
-			const distance = Math.sqrt(dx * dx + dy * dy);
+        if (isSelecting) {
+            const dx = x - startX;
+            const dy = y - startY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
 
             if (!isDragSelection && distance > DRAG_THRESHOLD) {
                 // Switch into drag mode
@@ -447,11 +419,11 @@
         }
     });
 
-	// Update selection box on scroll
-	document.addEventListener('scroll', onScroll, true);
+    // Update selection box on scroll
+    document.addEventListener('scroll', onScroll, true);
 
-	overlay.addEventListener('mouseup', (e) => {
-		if (!isSelecting) return;
+    overlay.addEventListener('mouseup', (e) => {
+        if (!isSelecting) return;
 
         e.preventDefault();
         e.stopPropagation();
