@@ -30,7 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (!popupStatus) return;
 
 		if (popupStatus.state === 'loading') {
-
+			isProcessing = true;
+			captureBtn.textContent = 'Cancel';
+			captureBtn.classList.add('cancel-mode');
 			statusText.textContent = popupStatus.text || 'Processing...';
 			statusEl.classList.add('show', 'loading');
 		} else if (
@@ -53,6 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
 			captureBtn.classList.remove('cancel-mode');  
 			statusEl.classList.remove('show', 'loading', 'error');
         	statusText.textContent = '';
+			// Clear the stored popup status so it resets next time
+			chrome.storage.local.set({ popupStatus: null });
+			// Close popup like the initial screenshot button does
+			window.close();
 			return;
 		}
 		
