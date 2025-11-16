@@ -218,6 +218,45 @@
 		}
 	}
 
+	async function finishElementTextCapture(element) {
+		try {
+			// Hide UI elements before extracting text
+			overlay.style.display = 'none';
+			selectionBox.style.display = 'none';
+			instruction.style.display = 'none';
+
+			// Extract text content from the element
+			const textContent = element.innerText || element.textContent || '';
+
+			if (!textContent.trim()) {
+				throw new Error('No text content found in selected element.');
+			}
+
+			console.log('Sending element text to parseElementText...');
+			const createRes = await sendMessage({
+				action: 'parseElementText',
+				textContent: textContent.trim(),
+			});
+
+			if (!createRes || !createRes.success || !createRes.url) {
+				const msg =
+					createRes && createRes.error
+						? createRes.error
+						: 'Failed to create calendar event from text.';
+				throw new Error(msg);
+			}
+
+			await sendMessage({
+				action: 'openUrl',
+				url: createRes.url,
+			});
+		} catch (error) {
+			console.error('Element text capture error:', error);
+		} finally {
+			cleanup();
+		}
+	}
+
 	overlay.addEventListener('mousedown', (e) => {
 		e.preventDefault();
 		e.stopPropagation();
@@ -267,7 +306,7 @@
 		isSelecting = false;
 
 		if (isDragSelection) {
-			// Drag selection path (old behavior)
+			// Drag selection path (screenshot capture)
 			const endX = e.clientX;
 			const endY = e.clientY;
 
@@ -284,7 +323,7 @@
 
 			finishSelectionAndCapture(x, y, width, height);
 		} else {
-			// Element click selection path
+			// Element click selection path (text extraction)
 			const el =
 				currentElement || getElementAtPoint(e.clientX, e.clientY);
 
@@ -299,13 +338,8 @@
 				return;
 			}
 
-			// Use the element's bounding box
-			finishSelectionAndCapture(
-				rect.left,
-				rect.top,
-				rect.width,
-				rect.height
-			);
+			// Extract and send text content instead of screenshot
+			finishElementTextCapture(el);
 		}
 	});
 
