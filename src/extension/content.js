@@ -5,6 +5,10 @@
 	let startX = 0;
 	let startY = 0;
 	let isSelecting = false;
+	let isDragSelection = false;
+	let currentElement = null;
+
+	const DRAG_THRESHOLD = 8;
 
 	const overlay = document.createElement('div');
 	overlay.id = 'screenshot-overlay';
@@ -46,9 +50,11 @@
     font-weight: 600;
     z-index: 2147483647;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
   `;
 	instruction.textContent =
-		'Click and drag to select area • ESC to cancel';
+		'Hover to select element • Click to capture • Drag to draw region • ' +
+		'ESC to cancel';
 
 	document.body.appendChild(overlay);
 	document.body.appendChild(selectionBox);
@@ -78,6 +84,7 @@
 		});
 	}
 
+	// Drag-based selection (old behavior)
 	function updateSelection(currentX, currentY) {
 		const x = Math.min(startX, currentX);
 		const y = Math.min(startY, currentY);
@@ -88,6 +95,30 @@
 		selectionBox.style.top = `${y}px`;
 		selectionBox.style.width = `${width}px`;
 		selectionBox.style.height = `${height}px`;
+		selectionBox.style.display = 'block';
+	}
+
+	// Element-based selection helpers
+	function getElementAtPoint(x, y) {
+		// Temporarily let events hit the page to detect the underlying element
+		overlay.style.pointerEvents = 'none';
+		const el = document.elementFromPoint(x, y);
+		overlay.style.pointerEvents = 'auto';
+		return el || null;
+	}
+
+	function updateElementSelectionAt(x, y) {
+		const el = getElementAtPoint(x, y);
+		if (!el) return;
+
+		currentElement = el;
+		const rect = el.getBoundingClientRect();
+
+		selectionBox.style.display = 'block';
+		selectionBox.style.left = `${rect.left}px`;
+		selectionBox.style.top = `${rect.top}px`;
+		selectionBox.style.width = `${rect.width}px`;
+		selectionBox.style.height = `${rect.height}px`;
 	}
 
 	async function captureSelection(x, y, width, height) {
@@ -190,41 +221,92 @@
 	overlay.addEventListener('mousedown', (e) => {
 		e.preventDefault();
 		e.stopPropagation();
+
 		isSelecting = true;
+		isDragSelection = false;
 		startX = e.clientX;
 		startY = e.clientY;
-		selectionBox.style.display = 'block';
-		updateSelection(e.clientX, e.clientY);
 	});
 
 	overlay.addEventListener('mousemove', (e) => {
-		if (!isSelecting) return;
 		e.preventDefault();
 		e.stopPropagation();
-		updateSelection(e.clientX, e.clientY);
+
+		const x = e.clientX;
+		const y = e.clientY;
+
+		if (isSelecting) {
+			const dx = x - startX;
+			const dy = y - startY;
+			const distance = Math.sqrt(dx * dx + dy * dy);
+
+			if (!isDragSelection && distance > DRAG_THRESHOLD) {
+				// Switch into drag mode
+				isDragSelection = true;
+			}
+
+			if (isDragSelection) {
+				// Old behavior: free-form rectangular selection
+				updateSelection(x, y);
+			} else {
+				// Still treating this as an element click; keep highlighting element
+				updateElementSelectionAt(x, y);
+			}
+		} else {
+			// Hover mode: highlight element under cursor
+			updateElementSelectionAt(x, y);
+		}
 	});
 
 	overlay.addEventListener('mouseup', (e) => {
 		if (!isSelecting) return;
+
 		e.preventDefault();
 		e.stopPropagation();
+
 		isSelecting = false;
 
-		const endX = e.clientX;
-		const endY = e.clientY;
+		if (isDragSelection) {
+			// Drag selection path (old behavior)
+			const endX = e.clientX;
+			const endY = e.clientY;
 
-		const x = Math.min(startX, endX);
-		const y = Math.min(startY, endY);
-		const width = Math.abs(endX - startX);
-		const height = Math.abs(endY - startY);
+			const x = Math.min(startX, endX);
+			const y = Math.min(startY, endY);
+			const width = Math.abs(endX - startX);
+			const height = Math.abs(endY - startY);
 
-		if (width < 10 || height < 10) {
-			// Tiny drag – treat as cancel
-			cleanup();
-			return;
+			if (width < 10 || height < 10) {
+				// Tiny drag – treat as cancel
+				cleanup();
+				return;
+			}
+
+			finishSelectionAndCapture(x, y, width, height);
+		} else {
+			// Element click selection path
+			const el =
+				currentElement || getElementAtPoint(e.clientX, e.clientY);
+
+			if (!el) {
+				cleanup();
+				return;
+			}
+
+			const rect = el.getBoundingClientRect();
+			if (rect.width <= 0 || rect.height <= 0) {
+				cleanup();
+				return;
+			}
+
+			// Use the element's bounding box
+			finishSelectionAndCapture(
+				rect.left,
+				rect.top,
+				rect.width,
+				rect.height
+			);
 		}
-
-		finishSelectionAndCapture(x, y, width, height);
 	});
 
 	function onKeydown(e) {
