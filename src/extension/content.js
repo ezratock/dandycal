@@ -1,26 +1,23 @@
 (function() {
-	// Prevent multiple instances
 	if (window.screenshotSelectorActive) return;
 	window.screenshotSelectorActive = true;
 
-	let startX, startY, endX, endY;
+	let startX = 0;
+	let startY = 0;
 	let isSelecting = false;
 
-	// Create overlay
 	const overlay = document.createElement('div');
 	overlay.id = 'screenshot-overlay';
 	overlay.style.cssText = `
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100vw;
     height: 100vh;
     background: rgba(0, 0, 0, 0.4);
     cursor: crosshair;
-    z-index: 999999;
+    z-index: 2147483646;
   `;
 
-	// Create selection box
 	const selectionBox = document.createElement('div');
 	selectionBox.id = 'screenshot-selection';
 	selectionBox.style.cssText = `
@@ -28,11 +25,11 @@
     border: 2px solid #667eea;
     background: rgba(102, 126, 234, 0.1);
     display: none;
-    z-index: 1000000;
+    z-index: 2147483647;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
   `;
 
-	// Create instruction text
 	const instruction = document.createElement('div');
 	instruction.style.cssText = `
     position: fixed;
@@ -43,62 +40,43 @@
     color: #667eea;
     padding: 12px 24px;
     border-radius: 8px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+      Roboto, sans-serif;
     font-size: 14px;
     font-weight: 600;
-    z-index: 1000001;
+    z-index: 2147483647;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   `;
-	instruction.textContent = 'Click and drag to select area • ESC to cancel';
+	instruction.textContent =
+		'Click and drag to select area • ESC to cancel';
 
 	document.body.appendChild(overlay);
 	document.body.appendChild(selectionBox);
 	document.body.appendChild(instruction);
 
-	// Mouse down - start selection
-	overlay.addEventListener('mousedown', (e) => {
-		isSelecting = true;
-		startX = e.clientX;
-		startY = e.clientY;
-		selectionBox.style.display = 'block';
-		updateSelection(e.clientX, e.clientY);
-	});
+	function sendMessage(message) {
+		return new Promise((resolve, reject) => {
+			try {
+				chrome.runtime.sendMessage(message, (response) => {
+					if (chrome.runtime.lastError) {
+						reject(new Error(chrome.runtime.lastError.message));
+						return;
+					}
+					resolve(response);
+				});
+			} catch (err) {
+				reject(err);
+			}
+		});
+	}
 
-	// Mouse move - update selection
-	overlay.addEventListener('mousemove', (e) => {
-		if (!isSelecting) return;
-		updateSelection(e.clientX, e.clientY);
-	});
-
-	// Mouse up - capture selection
-	overlay.addEventListener('mouseup', async (e) => {
-		if (!isSelecting) return;
-		isSelecting = false;
-
-		endX = e.clientX;
-		endY = e.clientY;
-
-		// Calculate selection bounds
-		const x = Math.min(startX, endX);
-		const y = Math.min(startY, endY);
-		const width = Math.abs(endX - startX);
-		const height = Math.abs(endY - startY);
-
-		if (width < 10 || height < 10) {
-			cleanup();
-			return;
-		}
-
-		// Capture the screenshot
-		await captureSelection(x, y, width, height);
-	});
-
-	// ESC to cancel
-	document.addEventListener('keydown', (e) => {
-		if (e.key === 'Escape') {
-			cleanup();
-		}
-	});
+	function waitForNextFrame() {
+		return new Promise((resolve) => {
+			requestAnimationFrame(() => {
+				requestAnimationFrame(resolve);
+			});
+		});
+	}
 
 	function updateSelection(currentX, currentY) {
 		const x = Math.min(startX, currentX);
@@ -106,98 +84,156 @@
 		const width = Math.abs(currentX - startX);
 		const height = Math.abs(currentY - startY);
 
-		selectionBox.style.left = x + 'px';
-		selectionBox.style.top = y + 'px';
-		selectionBox.style.width = width + 'px';
-		selectionBox.style.height = height + 'px';
+		selectionBox.style.left = `${x}px`;
+		selectionBox.style.top = `${y}px`;
+		selectionBox.style.width = `${width}px`;
+		selectionBox.style.height = `${height}px`;
 	}
 
 	async function captureSelection(x, y, width, height) {
+		console.log('Starting screen capture...');
+
+		// Hide overlay elements from the capture
+		overlay.style.display = 'none';
+		selectionBox.style.display = 'none';
+		instruction.style.display = 'none';
+
+		// Ensure layout is updated before capturing
+		await waitForNextFrame();
+
+		console.log('Requesting runtime capture screen');
+		const fullCapture = await sendMessage({
+			action: 'captureVisible',
+		});
+
+		if (!fullCapture || typeof fullCapture !== 'string') {
+			throw new Error('No capture data from background.');
+		}
+
+		console.log('Creating image and cropping...');
+		const scale = window.devicePixelRatio || 1;
+
+		const canvas = document.createElement('canvas');
+		canvas.width = Math.round(width * scale);
+		canvas.height = Math.round(height * scale);
+		const ctx = canvas.getContext('2d');
+
+		const img = new Image();
+		img.src = fullCapture;
+
+		await new Promise((resolve, reject) => {
+			img.onload = () => resolve();
+			img.onerror = () =>
+				reject(new Error('Failed to load captured image.'));
+		});
+
+		ctx.drawImage(
+			img,
+			Math.round(x * scale),
+			Math.round(y * scale),
+			Math.round(width * scale),
+			Math.round(height * scale),
+			0,
+			0,
+			canvas.width,
+			canvas.height
+		);
+
+		const dataUrl = canvas.toDataURL('image/png');
+		const base64Data = dataUrl.split(',')[1];
+
+		console.log('Sending to createCalendarEvent...');
+		const createRes = await sendMessage({
+			action: 'createCalendarEvent',
+			base64Image: base64Data,
+		});
+
+		if (!createRes || !createRes.success || !createRes.url) {
+			const msg =
+				createRes && createRes.error
+					? createRes.error
+					: 'Failed to create calendar event.';
+			throw new Error(msg);
+		}
+
+		return createRes.url;
+	}
+
+	function cleanup() {
 		try {
-			console.log("Starting screen capture...")
-			// Hide overlay temporarily
-			overlay.style.display = 'none';
-			selectionBox.style.display = 'none';
-			instruction.style.display = 'none';
+			overlay.remove();
+			selectionBox.remove();
+			instruction.remove();
+		} catch (e) {
+			// ignore
+		}
+		document.removeEventListener('keydown', onKeydown, true);
+		window.screenshotSelectorActive = false;
+	}
 
-			// Wait a moment for UI to hide
-			await new Promise(resolve => setTimeout(resolve, 100));
+	async function finishSelectionAndCapture(x, y, width, height) {
+		try {
+			const calendarUrl = await captureSelection(x, y, width, height);
 
-			// Use html2canvas to capture the selected area
-			const canvas = document.createElement('canvas');
-			const ctx = canvas.getContext('2d');
-			canvas.width = width * window.devicePixelRatio;
-			canvas.height = height * window.devicePixelRatio;
-
-			// Capture full page first
-			console.log("Requesting runtime capture screen")
-			const fullCapture = await chrome.runtime.sendMessage({ action: 'captureVisible' });
-
-			// Load image
-			console.log("Creating image...")
-			const img = new Image();
-			img.onload = () => {
-				// Calculate scaling
-				const scale = window.devicePixelRatio;
-				ctx.drawImage(
-					img,
-					x * scale, y * scale, width * scale, height * scale,
-					0, 0, width * scale, height * scale
-				);
-
-				// Convert to data URL
-				const dataUrl = canvas.toDataURL('image/png');
-
-				// Extract base64 from data URL
-				const base64Data = dataUrl.split(',')[1];
-
-
-				chrome.runtime.sendMessage(
-					{
-						action: "createCalendarEvent",
-						base64Image: base64Data,
-					},
-					(response) => {
-						if (chrome.runtime.lastError) {
-							console.error("Extension error:", chrome.runtime.lastError.message);
-							cleanup();
-							return;
-						}
-
-						if (!response || !response.success) {
-							console.error("Failed to create calendar URL:", response?.error);
-							cleanup();
-							return;
-						}
-
-						const { url } = response;
-
-						// now tell background to open the URL in a new tab
-						chrome.runtime.sendMessage(
-							{
-								action: "openUrl",
-								url,
-							},
-							() => {
-								cleanup();
-							}
-						);
-					}
-				)
-			};
-			img.src = fullCapture;
-
+			await sendMessage({
+				action: 'openUrl',
+				url: calendarUrl,
+			});
 		} catch (error) {
 			console.error('Capture error:', error);
+			// Optional: show an in-page error if you want
+		} finally {
 			cleanup();
 		}
 	}
 
-	function cleanup() {
-		overlay.remove();
-		selectionBox.remove();
-		instruction.remove();
-		window.screenshotSelectorActive = false;
-		chrome.runtime.sendMessage({ action: 'screenshotComplete' });
+	overlay.addEventListener('mousedown', (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		isSelecting = true;
+		startX = e.clientX;
+		startY = e.clientY;
+		selectionBox.style.display = 'block';
+		updateSelection(e.clientX, e.clientY);
+	});
+
+	overlay.addEventListener('mousemove', (e) => {
+		if (!isSelecting) return;
+		e.preventDefault();
+		e.stopPropagation();
+		updateSelection(e.clientX, e.clientY);
+	});
+
+	overlay.addEventListener('mouseup', (e) => {
+		if (!isSelecting) return;
+		e.preventDefault();
+		e.stopPropagation();
+		isSelecting = false;
+
+		const endX = e.clientX;
+		const endY = e.clientY;
+
+		const x = Math.min(startX, endX);
+		const y = Math.min(startY, endY);
+		const width = Math.abs(endX - startX);
+		const height = Math.abs(endY - startY);
+
+		if (width < 10 || height < 10) {
+			// Tiny drag – treat as cancel
+			cleanup();
+			return;
+		}
+
+		finishSelectionAndCapture(x, y, width, height);
+	});
+
+	function onKeydown(e) {
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			e.stopPropagation();
+			cleanup();
+		}
 	}
+
+	document.addEventListener('keydown', onKeydown, true);
 })();
