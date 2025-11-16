@@ -261,6 +261,134 @@ async function handleOpenUrl(request, sendResponse) {
 	}
 }
 
+async function handleDownloadText(request, sendResponse) {
+	const loadingStatus = {
+		state: 'loading',
+		text: 'Processing text to calendar event...',
+	};
+	setPopupStatus(loadingStatus);
+
+	// Try to open the popup
+	chrome.action.openPopup?.();
+	if (chrome.runtime.lastError) {
+		console.warn('openPopup error:', chrome.runtime.lastError.message);
+	}
+
+	// Delay 100ms so the popup has time to open and listen before sending
+	await new Promise((resolve) => setTimeout(resolve, 100));
+	try {
+		chrome.runtime.sendMessage({
+			action: 'showLoading',
+			text: loadingStatus.text,
+		});
+	} catch (e) {
+		console.warn('Failed to send showLoading:', e);
+	}
+
+	try {
+		const textContent = request.textContent;
+
+		if (!textContent || !textContent.trim()) {
+			throw new Error('No text content provided.');
+		}
+
+		const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
+		const apiKey = geminiApiKey;
+
+		if (!apiKey) {
+			const errorMsg =
+				'API key not configured. Please set it in extension options.';
+
+			const errorStatus = { state: 'error', text: errorMsg };
+			setPopupStatus(errorStatus);
+
+			try {
+				chrome.runtime.sendMessage({
+					action: 'hideLoading',
+					text: errorMsg,
+				});
+			} catch (e) {
+				console.warn('Failed to send hideLoading:', e);
+			}
+
+			sendResponse({
+				success: false,
+				error: errorMsg,
+			});
+			return;
+		}
+
+		const { event, url } = await createCalendarUrlFromText(
+			textContent,
+			apiKey,
+		);
+
+		// Check if user cancelled while we were processing
+		const { userCancelled } = await chrome.storage.local.get(['userCancelled']);
+		if (userCancelled) {
+			const cancelText = 'Cancelled';
+			const cancelStatus = { state: 'error', text: cancelText };
+			setPopupStatus(cancelStatus);
+
+			try {
+				chrome.runtime.sendMessage({
+					action: 'hideLoading',
+					text: cancelText,
+				});
+			} catch (e) {
+				console.warn('Failed to send hideLoading:', e);
+			}
+
+			sendResponse({
+				success: false,
+				error: 'User cancelled the operation',
+			});
+			return;
+		}
+
+		const successText = '';
+		const successStatus = { state: 'done', text: successText };
+		setPopupStatus(successStatus);
+
+		try {
+			chrome.runtime.sendMessage({
+				action: 'hideLoading',
+				text: successText,
+			});
+		} catch (e) {
+			console.warn('Failed to send hideLoading:', e);
+		}
+
+		// Open the calendar URL
+		await chrome.tabs.create({ url: url });
+
+		sendResponse({ success: true, event, url });
+	} catch (error) {
+		console.error('Text to calendar error:', error);
+
+		const errText = error?.message || 'Failed to process text.';
+		const errorStatus = { state: 'error', text: errText };
+		setPopupStatus(errorStatus);
+
+		try {
+			chrome.runtime.sendMessage({
+				action: 'hideLoading',
+				text: errText,
+			});
+		} catch (e) {
+			console.warn('Failed to send hideLoading:', e);
+		}
+
+		sendResponse({
+			success: false,
+			error: errText,
+		});
+	} finally {
+		// Reset cancellation flag after operation completes
+		resetCancellation();
+	}
+}
+
 async function handleCaptureFullScreen(sendResponse) {
 	try {
 		// Wait a moment for popup to fully close
@@ -414,6 +542,11 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
 	if (request.action === 'captureFullScreen') {
 		handleCaptureFullScreen(sendResponse);
+		return true;
+	}
+
+	if (request.action === 'downloadText') {
+		handleDownloadText(request, sendResponse);
 		return true;
 	}
 
