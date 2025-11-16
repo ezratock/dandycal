@@ -1,9 +1,35 @@
+:root {
+	/* Primary colors */
+	--gradient-start: rgb(36, 39, 58);
+	--gradient-end: rgb(30, 32, 48);
+	--primary-text: rgb(202, 211, 245);
+	--secondary-text: rgb(184, 192, 224);
+	--button-bg: rgb(255, 186, 208);
+	--button-text: rgb(42, 44, 66);
+	--button-text-processing: #f38ba8;
+
+	/* Overlay colors */
+	--overlay-bg: rgba(127, 132, 156, 0.15);
+	--overlay-strong: rgba(49, 50, 68, 0.25);
+	--overlay-hover: rgba(49, 50, 68, 0.35);
+	--recording-bg: rgba(249, 226, 175, 0.3);
+
+	/* Shadow colors */
+	--shadow-light: rgba(0, 0, 0, 0.1);
+	--shadow-medium: rgba(0, 0, 0, 0.15);
+	--shadow-strong: rgba(0, 0, 0, 0.2);
+
+	/* Spinner colors */
+	--spinner-track: rgba(255, 255, 255, 0.3);
+	--spinner-color: #ffffff;
+}
+
 body {
 	width: 320px;
 	margin: 0;
 	padding: 0;
 	font-family: 'Courier New', monospace;
-	background: linear-gradient(135deg, #428df5 0%, #4ef542 100%);
+	background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
 }
 
 .container {
@@ -15,14 +41,14 @@ h1 {
 	margin: 0 0 8px 0;
 	font-size: 28px;
 	font-weight: 700;
-	color: #ffffff;
-	text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	color: var(--primary-text);
+	text-shadow: 0 2px 4px var(--shadow-light);
 }
 
 p {
 	margin: 0 0 24px 0;
 	font-size: 14px;
-	color: rgba(255, 255, 255, 0.9);
+	color: var(--secondary-text);
 	font-weight: 400;
 }
 
@@ -31,34 +57,34 @@ p {
 	padding: 14px 24px;
 	font-size: 16px;
 	font-weight: 600;
-	color: #e8db64;
-	background: #ffffff;
+	color: var(--button-text);
+	background: var(--button-bg);
 	border: none;
 	border-radius: 12px;
 	cursor: pointer;
 	transition: all 0.2s ease;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	box-shadow: 0 4px 12px var(--shadow-medium);
 }
 
 #captureBtn:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+	box-shadow: 0 6px 16px var(--shadow-strong);
 }
 
 #captureBtn:active {
 	transform: translateY(0);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	box-shadow: 0 2px 8px var(--shadow-medium);
 }
 
 #captureBtn:processing {
-	color: #DFFFB0;
+	color: var(--button-text-processing);
 }
 
 .status {
 	margin-top: 16px;
 	min-height: 20px;
 	font-size: 13px;
-	color: #ffffff;
+	color: var(--primary-text);
 	opacity: 0;
 	transition: opacity 0.3s ease;
 	display: flex;
@@ -74,8 +100,8 @@ p {
 .spinner {
 	width: 14px;
 	height: 14px;
-	border: 2px solid rgba(255, 255, 255, 0.3);
-	border-top-color: #ffffff;
+	border: 2px solid var(--spinner-track);
+	border-top-color: var(--spinner-color);
 	border-radius: 50%;
 	animation: spin 0.8s linear infinite;
 	display: none;
@@ -94,7 +120,7 @@ p {
 .shortcut {
 	margin-top: 20px;
 	padding: 12px;
-	background: rgba(255, 255, 255, 0.15);
+	background: var(--overlay-bg);
 	border-radius: 8px;
 	backdrop-filter: blur(10px);
 	font-size: 13px;
@@ -107,25 +133,25 @@ p {
 
 code {
 	padding: 4px 10px;
-	background: rgba(255, 255, 255, 0.25);
+	background: var(--overlay-strong);
 	border-radius: 6px;
 	font-family: 'Courier New', monospace;
 	font-size: 13px;
 	font-weight: 600;
-	color: #ffffff;
+	color: var(--primary-text);
 	letter-spacing: 0.5px;
 	cursor: pointer;
 	transition: all 0.2s ease;
 }
 
 code:hover {
-	background: rgba(255, 255, 255, 0.35);
+	background: var(--overlay-hover);
 	transform: scale(1.05);
 }
 
 code.recording {
 	animation: pulse 1.5s ease-in-out infinite;
-	background: rgba(255, 215, 0, 0.3);
+	background: var(--recording-bg);
 }
 
 @keyframes pulse {
