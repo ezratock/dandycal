@@ -36,7 +36,7 @@
     const selectionBox = document.createElement('div');
     selectionBox.id = 'screenshot-selection';
     selectionBox.style.cssText = `  
-    position: fixed;    border: 2px solid #667eea;    background: rgba(102, 126, 234, 0.1);    display: none;    z-index: 2147483647;    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);    pointer-events: none;  `;
+    position: fixed;    border: 2px solid #667eea;    background: rgba(102, 126, 234, 0.1);    display: none;    z-index: 2147483647;    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);    pointer-events: none;    transition: all 0.15s ease-in-out;  `;
 
     const instruction = document.createElement('div');
     instruction.style.cssText = `  
