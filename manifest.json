@@ -25,7 +25,7 @@
 	},
 	"options_page": "src/extension/options.html",
 	"commands": {
-		"_execute_action": {
+		"capture-screenshot": {
 			"suggested_key": {
 				"default": "Ctrl+Shift+S",
 				"mac": "Command+Shift+S"
