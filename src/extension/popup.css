@@ -88,6 +88,7 @@ p {
 
 #captureRegionBtn,
 #captureFullBtn,
+#selectTextBtn,
 #cancelBtn {
 	width: 100%;
 	padding: 14px 24px;
@@ -104,6 +105,7 @@ p {
 
 #captureRegionBtn:hover,
 #captureFullBtn:hover,
+#selectTextBtn:hover,
 #cancelBtn:hover {
 	transform: translateY(-2px);
 	box-shadow: 0 6px 16px var(--shadow-strong);
@@ -111,13 +113,15 @@ p {
 
 #captureRegionBtn:active,
 #captureFullBtn:active,
+#selectTextBtn:active,
 #cancelBtn:active {
 	transform: translateY(0);
 	box-shadow: 0 2px 8px var(--shadow-medium);
 }
 
 #captureRegionBtn:disabled,
-#captureFullBtn:disabled {
+#captureFullBtn:disabled,
+#selectTextBtn:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
 	transform: none;
@@ -125,7 +129,8 @@ p {
 }
 
 #captureRegionBtn:disabled:hover,
-#captureFullBtn:disabled:hover {
+#captureFullBtn:disabled:hover,
+#selectTextBtn:disabled:hover {
 	transform: none;
 	box-shadow: 0 2px 6px var(--shadow-light);
 }

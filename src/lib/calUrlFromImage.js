@@ -116,11 +116,11 @@ export async function createCalendarUrlFromText(textContent, apiKey) {
 
 	// Get current date in a readable format for the AI
 	const today = new Date();
-	const dateStr = today.toLocaleDateString('en-US', {
-		weekday: 'long',
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric'
+	const dateStr = today.toLocaleDateString('en-US', { 
+		weekday: 'long', 
+		year: 'numeric', 
+		month: 'long', 
+		day: 'numeric' 
 	});
 
 	const prompt = [

@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const statusText = document.getElementById('statusText');
 	const captureRegionBtn = document.getElementById('captureRegionBtn');
 	const captureFullBtn = document.getElementById('captureFullBtn');
+    const selectTextBtn = document.getElementById('selectTextBtn');
 	const cancelBtn = document.getElementById('cancelBtn');
 	const captureButtons = document.getElementById('captureButtons');
 	const shortcutLink = document.getElementById('shortcutLink');
@@ -218,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		cancelBtn.style.display = 'none';
 		captureRegionBtn.disabled = true;
 		captureFullBtn.disabled = true;
+		selectTextBtn.disabled = true;
 
 		// Show cancelling status with spinner
 		statusText.textContent = 'Cancelling request...';
@@ -231,6 +233,56 @@ document.addEventListener('DOMContentLoaded', () => {
 				text: 'Cancelling request...'
 			}
 		});
+	});
+
+	// Select Text button handler
+	selectTextBtn.addEventListener('click', async () => {
+		// Don't allow new requests while cancelling
+		if (isCancelling) return;
+
+		try {
+			// Hide capture buttons, show cancel button
+			captureButtons.style.display = 'none';
+			cancelBtn.style.display = 'block';
+			isProcessing = true;
+
+			statusText.textContent = 'Select text on the page...';
+			statusEl.classList.add('show');
+			statusEl.classList.remove('loading', 'error');
+
+			const [tab] = await chrome.tabs.query({
+				active: true,
+				currentWindow: true,
+			});
+
+			if (!tab || !tab.id) {
+				throw new Error('No active tab found.');
+			}
+
+			// Reset cancel flag for new selection
+			chrome.storage.local.set({ userCancelled: false });
+
+			await chrome.scripting.executeScript({
+				target: { tabId: tab.id },
+				files: ['src/extension/text-selector.js'],
+			});
+
+			// Close popup so user can see the page and select text
+			window.close();
+		} catch (error) {
+			console.error('Text selection error:', error);
+			statusText.textContent = '✗ Error starting text selection';
+			statusEl.classList.add('show', 'error');
+
+			// Reset button states on error
+			captureButtons.style.display = 'flex';
+			cancelBtn.style.display = 'none';
+			isProcessing = false;
+
+			setTimeout(() => {
+				statusEl.classList.remove('show', 'error');
+			}, 3000);
+		}
 	});
 
 	// Live status updates from background.js
@@ -256,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			// Re-enable buttons
 			captureRegionBtn.disabled = false;
 			captureFullBtn.disabled = false;
+			selectTextBtn.disabled = false;
 
 			if (message.text) {
 				statusText.textContent = message.text;
