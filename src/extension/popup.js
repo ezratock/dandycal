@@ -24,8 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectTextBtn = document.getElementById('selectTextBtn');
 	const cancelBtn = document.getElementById('cancelBtn');
 	const captureButtons = document.getElementById('captureButtons');
-	const shortcutLink = document.getElementById('shortcutLink');
-	const shortcutKey = document.getElementById('shortcutKey');
+	// const shortcutLink = document.getElementById('shortcutLink');
+	// const shortcutKey = document.getElementById('shortcutKey');
 	const volumeToggle = document.getElementById('volumeToggle');
 
 	let isProcessing = false;
@@ -64,17 +64,17 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	});
 
-	// Load the actual keyboard shortcut from Chrome settings
-	chrome.commands.getAll((commands) => {
-		const captureCommand = commands.find(
-			(cmd) => cmd.name === 'capture-screenshot',
-		);
-		if (captureCommand && captureCommand.shortcut) {
-			shortcutKey.textContent = captureCommand.shortcut;
-		} else {
-			shortcutKey.textContent = 'none set';
-		}
-	});
+	// // Load the actual keyboard shortcut from Chrome settings
+	// chrome.commands.getAll((commands) => {
+	// 	const captureCommand = commands.find(
+	// 		(cmd) => cmd.name === 'capture-screenshot',
+	// 	);
+	// 	if (captureCommand && captureCommand.shortcut) {
+	// 		shortcutKey.textContent = captureCommand.shortcut;
+	// 	} else {
+	// 		shortcutKey.textContent = 'none set';
+	// 	}
+	// });
 
 	// Make shortcut text clickable to open shortcuts settings
 	shortcutLink.addEventListener('click', (e) => {
