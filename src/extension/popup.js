@@ -1,3 +1,21 @@
+// Camera shutter sound effect
+function playCameraSound() {
+	// Check if sound is enabled
+	chrome.storage.local.get(['soundEnabled'], ({ soundEnabled }) => {
+		if (soundEnabled === false) {
+			return; // Sound is muted
+		}
+
+		try {
+			const audio = new Audio('assets/camera-13695.mp3');
+			audio.volume = 0.5;
+			audio.play().catch(err => console.warn('Failed to play camera sound:', err));
+		} catch (error) {
+			console.warn('Failed to play camera sound:', error);
+		}
+	});
+}
+
 document.addEventListener('DOMContentLoaded', () => {
 	const statusEl = document.getElementById('status');
 	const statusText = document.getElementById('statusText');
@@ -7,9 +25,43 @@ document.addEventListener('DOMContentLoaded', () => {
 	const captureButtons = document.getElementById('captureButtons');
 	const shortcutLink = document.getElementById('shortcutLink');
 	const shortcutKey = document.getElementById('shortcutKey');
+	const volumeToggle = document.getElementById('volumeToggle');
 
 	let isProcessing = false;
 	let isCancelling = false;
+
+	// Load and set initial volume icon state
+	chrome.storage.local.get(['soundEnabled'], ({ soundEnabled }) => {
+		// Default to enabled if not set
+		const isEnabled = soundEnabled !== false;
+		updateVolumeIcon(isEnabled);
+	});
+
+	// Update volume icon based on state
+	function updateVolumeIcon(isEnabled) {
+		if (isEnabled) {
+			volumeToggle.src = 'assets/volume.png';
+			volumeToggle.alt = 'Volume On';
+		} else {
+			volumeToggle.src = 'assets/mute.png';
+			volumeToggle.alt = 'Volume Off';
+		}
+	}
+
+	// Volume toggle click handler
+	volumeToggle.addEventListener('click', () => {
+		chrome.storage.local.get(['soundEnabled'], ({ soundEnabled }) => {
+			// Toggle the state (default to enabled if not set)
+			const currentState = soundEnabled !== false;
+			const newState = !currentState;
+
+			// Save new state
+			chrome.storage.local.set({ soundEnabled: newState });
+
+			// Update icon
+			updateVolumeIcon(newState);
+		});
+	});
 
 	// Load the actual keyboard shortcut from Chrome settings
 	chrome.commands.getAll((commands) => {
@@ -115,8 +167,18 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (isCancelling) return;
 
 		try {
+			// Play camera shutter sound
+			playCameraSound();
+
 			// Reset cancel flag for new capture
 			chrome.storage.local.set({ userCancelled: false });
+
+			// Show processing UI
+			captureButtons.style.display = 'none';
+			cancelBtn.style.display = 'block';
+			isProcessing = true;
+			statusText.textContent = 'Capturing screen...';
+			statusEl.classList.add('show', 'loading');
 
 			// Send message to background to handle full screen capture
 			// Background will close popup, capture, and process
@@ -124,8 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
 				action: 'captureFullScreen',
 			});
 
-			// Close popup immediately so it's not in the screenshot
-			window.close();
+			// Don't close popup - let user cancel if needed
 		} catch (error) {
 			console.error('Full screen capture error:', error);
 			statusText.textContent = '✗ Error capturing full screen';

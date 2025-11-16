@@ -10,6 +10,24 @@
 
     const DRAG_THRESHOLD = 8;
 
+    // Camera shutter sound effect
+    function playCameraSound() {
+        // Check if sound is enabled
+        chrome.storage.local.get(['soundEnabled'], ({ soundEnabled }) => {
+            if (soundEnabled === false) {
+                return; // Sound is muted
+            }
+
+            try {
+                const audio = new Audio(chrome.runtime.getURL('src/extension/assets/camera-13695.mp3'));
+                audio.volume = 0.5;
+                audio.play().catch(err => console.warn('Failed to play camera sound:', err));
+            } catch (error) {
+                console.warn('Failed to play camera sound:', error);
+            }
+        });
+    }
+
     const overlay = document.createElement('div');
     overlay.id = 'screenshot-overlay';
     overlay.style.cssText = `  
@@ -180,6 +198,9 @@
     async function captureSelection(x, y, width, height) {
         console.log('Starting screen capture...');
 
+        // Play camera shutter sound
+        playCameraSound();
+
         // Hide overlay elements from the capture
         overlay.style.display = 'none';
         selectionBox.style.display = 'none';
@@ -335,6 +356,9 @@
 
     async function finishElementTextCapture(element) {
         try {
+            // Play camera shutter sound
+            playCameraSound();
+
             // Hide UI elements before extracting text
             overlay.style.display = 'none';
             selectionBox.style.display = 'none';

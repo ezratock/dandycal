@@ -263,10 +263,11 @@ async function handleOpenUrl(request, sendResponse) {
 
 async function handleCaptureFullScreen(sendResponse) {
 	try {
-		// Wait a moment for popup to fully close
+		// Popup is still open showing "Capturing screen..." status
+		// Wait a moment for the popup to minimize/move out of the way
 		await new Promise(resolve => setTimeout(resolve, 150));
 
-		// Capture the full visible tab (popup is now closed, won't be in screenshot)
+		// Capture the full visible tab
 		const fullCapture = await chrome.tabs.captureVisibleTab(null, {
 			format: 'png',
 		});
@@ -278,21 +279,14 @@ async function handleCaptureFullScreen(sendResponse) {
 		// Convert data URL to base64
 		const base64Data = fullCapture.split(',')[1];
 
-		// Set processing status
+		// Update status to processing
 		const loadingStatus = {
 			state: 'loading',
 			text: 'Processing screenshot...',
 		};
 		setPopupStatus(loadingStatus);
 
-		// Try to reopen popup to show processing status
-		chrome.action.openPopup?.();
-		if (chrome.runtime.lastError) {
-			console.warn('openPopup error:', chrome.runtime.lastError.message);
-		}
-
-		// Delay 100ms so the popup has time to open and listen before sending
-		await new Promise((resolve) => setTimeout(resolve, 100));
+		// Send status update to popup (which is already open)
 		chrome.runtime.sendMessage({
 			action: 'showLoading',
 			text: loadingStatus.text,

@@ -37,12 +37,40 @@ body {
 	text-align: center;
 }
 
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 8px;
+	position: relative;
+}
+
 h1 {
-	margin: 0 0 8px 0;
+	margin: 0;
 	font-size: 28px;
 	font-weight: 700;
 	color: var(--primary-text);
 	text-shadow: 0 2px 4px var(--shadow-light);
+}
+
+.volume-icon {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 24px;
+	height: 24px;
+	cursor: pointer;
+	opacity: 0.8;
+	transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.volume-icon:hover {
+	opacity: 1;
+	transform: scale(1.1);
+}
+
+.volume-icon:active {
+	transform: scale(0.95);
 }
 
 p {
