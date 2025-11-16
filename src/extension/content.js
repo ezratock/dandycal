@@ -107,92 +107,6 @@
 		return el || null;
 	}
 
-	/**
-	 * Determine if an element should be processed as text or as an image.
-	 * Returns true if the element is primarily textual, false if it should be captured as an image.
-	 */
-	function isTextualElement(element) {
-		if (!element) return false;
-
-		// List of inherently textual tags
-		const textualTags = new Set([
-			'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
-			'SPAN', 'A', 'STRONG', 'EM', 'B', 'I', 'U',
-			'LI', 'UL', 'OL', 'BLOCKQUOTE', 'PRE', 'CODE',
-			'LABEL', 'LEGEND', 'CAPTION', 'TH', 'TD',
-			'DT', 'DD', 'CITE', 'Q', 'SMALL', 'MARK',
-			'DEL', 'INS', 'SUB', 'SUP', 'ABBR', 'TIME'
-		]);
-
-		// If the element itself is a textual tag, return true
-		if (textualTags.has(element.tagName)) {
-			return true;
-		}
-
-		// For container elements (DIV, SECTION, ARTICLE, etc.), check their contents
-		const containerTags = new Set([
-			'DIV', 'SECTION', 'ARTICLE', 'ASIDE', 'HEADER',
-			'FOOTER', 'NAV', 'MAIN', 'FIGURE', 'FIGCAPTION'
-		]);
-
-		if (containerTags.has(element.tagName)) {
-			// Check if the container has any image-related elements
-			const hasImages = element.querySelector('img, svg, canvas, video, picture, iframe');
-			if (hasImages) {
-				return false; // Contains images, should be processed as image
-			}
-
-			// Check if the container has significant text content
-			const textContent = (element.innerText || element.textContent || '').trim();
-			if (textContent.length === 0) {
-				return false; // No text, should be processed as image
-			}
-
-			// Check if all children are textual elements
-			const allChildren = Array.from(element.querySelectorAll('*'));
-			const hasNonTextualChildren = allChildren.some(child => {
-				const tag = child.tagName;
-				// If child is an image/media/canvas element
-				if (['IMG', 'SVG', 'CANVAS', 'VIDEO', 'PICTURE', 'IFRAME'].includes(tag)) {
-					return true;
-				}
-				return false;
-			});
-
-			if (hasNonTextualChildren) {
-				return false; // Contains non-textual children
-			}
-
-			// If we get here, it's a container with only textual content
-			return true;
-		}
-
-		// For image/media elements, always process as image
-		const visualTags = new Set([
-			'IMG', 'SVG', 'CANVAS', 'VIDEO', 'PICTURE', 'IFRAME'
-		]);
-
-		if (visualTags.has(element.tagName)) {
-			return false;
-		}
-
-		// For tables, check if they contain images
-		if (element.tagName === 'TABLE') {
-			const hasImages = element.querySelector('img, svg, canvas, video, picture');
-			return !hasImages; // Text if no images, otherwise image
-		}
-
-		// Default: if it has text content and no images, treat as text
-		const textContent = (element.innerText || element.textContent || '').trim();
-		if (textContent.length > 0) {
-			const hasImages = element.querySelector('img, svg, canvas, video, picture, iframe');
-			return !hasImages;
-		}
-
-		// Default to image processing if we can't determine
-		return false;
-	}
-
 	function updateElementSelectionAt(x, y) {
 		const el = getElementAtPoint(x, y);
 		if (!el) return;
@@ -309,45 +223,6 @@
 		}
 	}
 
-	async function finishElementTextCapture(element) {
-		try {
-			// Hide UI elements before extracting text
-			overlay.style.display = 'none';
-			selectionBox.style.display = 'none';
-			instruction.style.display = 'none';
-
-			// Extract text content from the element
-			const textContent = element.innerText || element.textContent || '';
-
-			if (!textContent.trim()) {
-				throw new Error('No text content found in selected element.');
-			}
-
-			console.log('Sending element text to parseElementText...');
-			const createRes = await sendMessage({
-				action: 'parseElementText',
-				textContent: textContent.trim(),
-			});
-
-			if (!createRes || !createRes.success || !createRes.url) {
-				const msg =
-					createRes && createRes.error
-						? createRes.error
-						: 'Failed to create calendar event from text.';
-				throw new Error(msg);
-			}
-
-			await sendMessage({
-				action: 'openUrl',
-				url: createRes.url,
-			});
-		} catch (error) {
-			console.error('Element text capture error:', error);
-		} finally {
-			cleanup();
-		}
-	}
-
 	overlay.addEventListener('mousedown', (e) => {
 		e.preventDefault();
 		e.stopPropagation();
@@ -397,7 +272,7 @@
 		isSelecting = false;
 
 		if (isDragSelection) {
-			// Drag selection path (screenshot capture)
+			// Drag selection path (old behavior)
 			const endX = e.clientX;
 			const endY = e.clientY;
 
@@ -429,19 +304,13 @@
 				return;
 			}
 
-			// Determine if element should be processed as text or image
-			if (isTextualElement(el)) {
-				// Extract and send text content
-				finishElementTextCapture(el);
-			} else {
-				// Capture as screenshot using element's bounding box
-				finishSelectionAndCapture(
-					rect.left,
-					rect.top,
-					rect.width,
-					rect.height
-				);
-			}
+			// Use the element's bounding box
+			finishSelectionAndCapture(
+				rect.left,
+				rect.top,
+				rect.width,
+				rect.height
+			);
 		}
 	});
 

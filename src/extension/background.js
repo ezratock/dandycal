@@ -5,6 +5,11 @@ function setPopupStatus(status) {
 	chrome.storage.local.set({ popupStatus: status });
 }
 
+function resetCancellation() {
+	// Reset the cancellation flag so user can make new selections
+	chrome.storage.local.set({ userCancelled: false });
+}
+
 async function startAreaSelectionCapture() {
 	try {
 		const [tab] = await chrome.tabs.query({
@@ -86,6 +91,25 @@ async function handleCreateCalendarEvent(request, sendResponse) {
 			apiKey,
 		);
 
+		// Check if user cancelled while we were processing
+		const { userCancelled } = await chrome.storage.local.get(['userCancelled']);
+		if (userCancelled) {
+			const cancelText = 'Cancelled';
+			const cancelStatus = { state: 'error', text: cancelText };
+			setPopupStatus(cancelStatus);
+
+			chrome.runtime.sendMessage({
+				action: 'hideLoading',
+				text: cancelText,
+			});
+
+			sendResponse({
+				success: false,
+				error: 'User cancelled the operation',
+			});
+			return;
+		}
+
 		const successText = '';
 		const successStatus = { state: 'done', text: successText };
 		setPopupStatus(successStatus);
@@ -112,6 +136,9 @@ async function handleCreateCalendarEvent(request, sendResponse) {
 			success: false,
 			error: errText,
 		});
+	} finally {
+		// Reset cancellation flag after operation completes
+		resetCancellation();
 	}
 }
 
@@ -189,6 +216,9 @@ async function handleParseElementText(request, sendResponse) {
 			success: false,
 			error: errText,
 		});
+	} finally {
+		// Reset cancellation flag after operation completes
+		resetCancellation();
 	}
 }
 
