@@ -281,7 +281,61 @@
 		return createRes.url;
 	}
 
+	let scrollTimeout = null;
+	let lastMouseX = 0;
+	let lastMouseY = 0;
+
+	function onScroll() {
+		// If we have a current element being highlighted, update its position immediately
+		if (currentElement && !isDragSelection && selectionBox.style.display !== 'none') {
+			// Check if mouse is now over a different element due to scrolling
+			const elementAtMouse = getElementAtPoint(lastMouseX, lastMouseY);
+
+			if (elementAtMouse && elementAtMouse !== currentElement) {
+				// Element changed due to scroll - use transition for smooth switch
+				currentElement = elementAtMouse;
+
+				// Enable transition
+				selectionBox.style.transition = 'all 0.15s ease-in-out';
+
+				// Force reflow to ensure transition is registered before changing position
+				void selectionBox.offsetHeight;
+
+				// Now apply new position with transition
+				const rect = elementAtMouse.getBoundingClientRect();
+				const padding = 12;
+
+				selectionBox.style.left = `${rect.left - padding}px`;
+				selectionBox.style.top = `${rect.top - padding}px`;
+				selectionBox.style.width = `${rect.width + padding * 2}px`;
+				selectionBox.style.height = `${rect.height + padding * 2}px`;
+			} else {
+				// Same element, just repositioned - no transition for immediate feedback
+				selectionBox.style.transition = 'none';
+
+				const rect = currentElement.getBoundingClientRect();
+				const padding = 12;
+
+				selectionBox.style.left = `${rect.left - padding}px`;
+				selectionBox.style.top = `${rect.top - padding}px`;
+				selectionBox.style.width = `${rect.width + padding * 2}px`;
+				selectionBox.style.height = `${rect.height + padding * 2}px`;
+
+				// Re-enable transitions after a short delay (when scrolling stops)
+				if (scrollTimeout) {
+					clearTimeout(scrollTimeout);
+				}
+				scrollTimeout = setTimeout(() => {
+					selectionBox.style.transition = 'all 0.15s ease-in-out';
+				}, 150);
+			}
+		}
+	}
+
 	function cleanup() {
+		if (scrollTimeout) {
+			clearTimeout(scrollTimeout);
+		}
 		try {
 			overlay.remove();
 			selectionBox.remove();
@@ -290,6 +344,7 @@
 			// ignore
 		}
 		document.removeEventListener('keydown', onKeydown, true);
+		document.removeEventListener('scroll', onScroll, true);
 		window.screenshotSelectorActive = false;
 	}
 
@@ -299,7 +354,7 @@
 
 			// Check if user cancelled before opening URL
 			const { userCancelled } = await chrome.storage.local.get(['userCancelled']);
-			
+
 			if (!userCancelled) {
 				await sendMessage({
 					action: 'openUrl',
@@ -363,12 +418,16 @@
 		startY = e.clientY;
 	});
 
+
 	overlay.addEventListener('mousemove', (e) => {
 		e.preventDefault();
 		e.stopPropagation();
 
 		const x = e.clientX;
 		const y = e.clientY;
+
+		lastMouseX = x;
+		lastMouseY = y;
 
 		if (isSelecting) {
 			const dx = x - startX;
@@ -392,6 +451,9 @@
 			updateElementSelectionAt(x, y);
 		}
 	});
+
+	// Update selection box on scroll
+	document.addEventListener('scroll', onScroll, true);
 
 	overlay.addEventListener('mouseup', (e) => {
 		if (!isSelecting) return;
@@ -460,3 +522,9 @@
 
 	document.addEventListener('keydown', onKeydown, true);
 })();
+
+
+
+
+
+
