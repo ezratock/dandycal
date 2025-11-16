@@ -52,7 +52,15 @@ p {
 	font-weight: 400;
 }
 
-#captureBtn {
+#captureButtons {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+#captureRegionBtn,
+#captureFullBtn,
+#cancelBtn {
 	width: 100%;
 	padding: 14px 24px;
 	font-size: 16px;
@@ -66,28 +74,28 @@ p {
 	box-shadow: 0 4px 12px var(--shadow-medium);
 }
 
-#captureBtn:hover {
+#captureRegionBtn:hover,
+#captureFullBtn:hover,
+#cancelBtn:hover {
 	transform: translateY(-2px);
 	box-shadow: 0 6px 16px var(--shadow-strong);
 }
 
-#captureBtn:active {
+#captureRegionBtn:active,
+#captureFullBtn:active,
+#cancelBtn:active {
 	transform: translateY(0);
 	box-shadow: 0 2px 8px var(--shadow-medium);
 }
 
-#captureBtn:processing {
-	color: var(--button-text-processing);
-}
-
-#captureBtn.cancel-mode {
-    background: #f78989;  
+#cancelBtn {
+    background: #f78989;
     color: white;
     font-weight: 700;
 }
 
-#captureBtn.cancel-mode:hover {
-    background: #f36464; 
+#cancelBtn:hover {
+    background: #f36464;
 }
 
 .status {

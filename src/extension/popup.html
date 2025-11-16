@@ -10,7 +10,11 @@
 	<div class="container">
 		<h1>DandyCal</h1>
 		<p>Capture your screen for calendar events</p>
-		<button id="captureBtn">Take Screenshot</button>
+		<div id="captureButtons">
+			<button id="captureRegionBtn">Capture Selected Region</button>
+			<button id="captureFullBtn">Capture Entire Screen</button>
+		</div>
+		<button id="cancelBtn" style="display: none;">Cancel</button>
 		<div id="status" class="status">
 			<span class="spinner"></span>
 			<span id="statusText"></span>
@@ -19,6 +23,7 @@
 			Shortcut: <a href="#" id="shortcutLink"><code id="shortcutKey">Ctrl+Shift+S</code></a>
 		</div>
 		<script src="popup.js"></script>
+	</div>
 </body>
 
 </html>
