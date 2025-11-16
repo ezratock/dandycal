@@ -20,6 +20,7 @@
     background: rgba(0, 0, 0, 0.4);
     cursor: crosshair;
     z-index: 2147483646;
+    transition: all 0.15s ease-in-out;
   `;
 
 	const selectionBox = document.createElement('div');
@@ -27,11 +28,13 @@
 	selectionBox.style.cssText = `
     position: fixed;
     border: 2px solid #667eea;
+	border-radius: 8px;
     background: rgba(102, 126, 234, 0.1);
     display: none;
     z-index: 2147483647;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
     pointer-events: none;
+    transition: all 0.15s ease-in-out;
   `;
 
 	const instruction = document.createElement('div');
@@ -114,11 +117,13 @@
 		currentElement = el;
 		const rect = el.getBoundingClientRect();
 
+		const padding = 12;
+
 		selectionBox.style.display = 'block';
-		selectionBox.style.left = `${rect.left}px`;
-		selectionBox.style.top = `${rect.top}px`;
-		selectionBox.style.width = `${rect.width}px`;
-		selectionBox.style.height = `${rect.height}px`;
+		selectionBox.style.left = `${rect.left - padding}px`;
+		selectionBox.style.top = `${rect.top - padding}px`;
+		selectionBox.style.width = `${rect.width + padding * 2}px`;
+		selectionBox.style.height = `${rect.height + padding * 2}px`;
 	}
 
 	async function captureSelection(x, y, width, height) {
