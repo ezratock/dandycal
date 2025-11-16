@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	const shortcutLink = document.getElementById('shortcutLink');
 	const shortcutKey = document.getElementById('shortcutKey');
 
+	let isProcessing = false;
+
 	// Load the actual keyboard shortcut from Chrome settings
 	chrome.commands.getAll((commands) => {
 		const captureCommand = commands.find(
@@ -28,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (!popupStatus) return;
 
 		if (popupStatus.state === 'loading') {
+
 			statusText.textContent = popupStatus.text || 'Processing...';
 			statusEl.classList.add('show', 'loading');
 		} else if (
@@ -40,8 +43,20 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	});
 
-	// Start area-selection capture when the button is clicked
+	// Start area-selection capture or cancel when the button is clicked
 	captureBtn.addEventListener('click', async () => {
+		if (isProcessing) {
+			// In processing mode - this is a CANCEL click
+			isProcessing = false;
+			chrome.storage.local.set({ userCancelled: true });
+			captureBtn.textContent = 'Take Screenshot';
+			captureBtn.classList.remove('cancel-mode');  
+			statusEl.classList.remove('show', 'loading', 'error');
+        	statusText.textContent = '';
+			return;
+		}
+		
+		// In initial mode - this is a TAKE SCREENSHOT click
 		try {
 			statusText.textContent = 'Select an area...';
 			statusEl.classList.add('show');
@@ -56,17 +71,21 @@ document.addEventListener('DOMContentLoaded', () => {
 				throw new Error('No active tab found.');
 			}
 
+			// Reset cancel flag for new capture
+			chrome.storage.local.set({ userCancelled: false });
+
 			await chrome.scripting.executeScript({
 				target: { tabId: tab.id },
 				files: ['src/extension/content.js'],
 			});
 
-			// Close popup so user can see the page
+			// Close popup so user can see the page and select area
 			window.close();
 		} catch (error) {
 			console.error('Screenshot error:', error);
 			statusText.textContent = '✗ Error starting capture';
 			statusEl.classList.add('show', 'error');
+
 			setTimeout(() => {
 				statusEl.classList.remove('show', 'error');
 			}, 3000);
@@ -78,6 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		console.log('received message to update loading status');
 
 		if (message.action === 'showLoading') {
+			// Processing has started - switch to cancel mode
+			isProcessing = true;
+			captureBtn.textContent = 'Cancel';
+			captureBtn.classList.add('cancel-mode');
 			statusText.textContent = message.text || 'Processing...';
 			statusEl.classList.add('show', 'loading');
 		} else if (message.action === 'hideLoading') {
@@ -87,10 +110,18 @@ document.addEventListener('DOMContentLoaded', () => {
 				statusText.textContent = message.text;
 				setTimeout(() => {
 					statusEl.classList.remove('show');
+					// Close popup after showing completion
+					window.close();
 				}, 3000);
 			} else {
 				statusEl.classList.remove('show');
+				window.close();
 			}
+
+			// Reset to initial state
+			isProcessing = false;
+			captureBtn.textContent = 'Take Screenshot';
+			captureBtn.classList.remove('cancel-mode');
 		}
 	});
 });

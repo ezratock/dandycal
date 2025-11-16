@@ -4,9 +4,9 @@
 	--gradient-end: rgb(30, 32, 48);
 	--primary-text: rgb(202, 211, 245);
 	--secondary-text: rgb(184, 192, 224);
-	--button-bg: rgb(255, 186, 208);
+	--button-bg: rgb(187, 250, 194);
 	--button-text: rgb(42, 44, 66);
-	--button-text-processing: #f38ba8;
+	--button-text-processing: #87eea2;
 
 	/* Overlay colors */
 	--overlay-bg: rgba(127, 132, 156, 0.15);
@@ -78,6 +78,16 @@ p {
 
 #captureBtn:processing {
 	color: var(--button-text-processing);
+}
+
+#captureBtn.cancel-mode {
+    background: #f78989;  
+    color: white;
+    font-weight: 700;
+}
+
+#captureBtn.cancel-mode:hover {
+    background: #f36464; 
 }
 
 .status {

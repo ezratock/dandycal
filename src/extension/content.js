@@ -206,10 +206,15 @@
 		try {
 			const calendarUrl = await captureSelection(x, y, width, height);
 
-			await sendMessage({
-				action: 'openUrl',
-				url: calendarUrl,
-			});
+			// Check if user cancelled before opening URL
+			const { userCancelled } = await chrome.storage.local.get(['userCancelled']);
+			
+			if (!userCancelled) {
+				await sendMessage({
+					action: 'openUrl',
+					url: calendarUrl,
+				});
+			}
 		} catch (error) {
 			console.error('Capture error:', error);
 			// Optional: show an in-page error if you want
