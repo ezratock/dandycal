@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const shortcutKey = document.getElementById('shortcutKey');
 
 	let isProcessing = false;
+	let isCancelling = false;
 
 	// Load the actual keyboard shortcut from Chrome settings
 	chrome.commands.getAll((commands) => {
@@ -38,6 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
 			cancelBtn.style.display = 'block';
 			statusText.textContent = popupStatus.text || 'Processing...';
 			statusEl.classList.add('show', 'loading');
+		} else if (popupStatus.state === 'cancelling') {
+			isCancelling = true;
+			isProcessing = false;
+			captureButtons.style.display = 'flex';
+			cancelBtn.style.display = 'none';
+			// Disable buttons during cancellation
+			captureRegionBtn.disabled = true;
+			captureFullBtn.disabled = true;
+			statusText.textContent = 'Cancelling request...';
+			statusEl.classList.add('show', 'loading');
 		} else if (
 			popupStatus.state === 'done' ||
 			popupStatus.state === 'error'
@@ -50,6 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Capture Selected Region button handler
 	captureRegionBtn.addEventListener('click', async () => {
+		// Don't allow new requests while cancelling
+		if (isCancelling) return;
+
 		try {
 			// Hide capture buttons, show cancel button
 			captureButtons.style.display = 'none';
@@ -97,6 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Capture Entire Screen button handler
 	captureFullBtn.addEventListener('click', async () => {
+		// Don't allow new requests while cancelling
+		if (isCancelling) return;
+
 		try {
 			// Reset cancel flag for new capture
 			chrome.storage.local.set({ userCancelled: false });
@@ -131,18 +148,28 @@ document.addEventListener('DOMContentLoaded', () => {
 		// Set cancellation flag
 		chrome.storage.local.set({ userCancelled: true });
 
-		// Reset UI
+		// Enter cancelling state
+		isCancelling = true;
+		isProcessing = false;
+
+		// Show capture buttons but disabled
 		captureButtons.style.display = 'flex';
 		cancelBtn.style.display = 'none';
-		isProcessing = false;
-		statusEl.classList.remove('show', 'loading', 'error');
-		statusText.textContent = '';
+		captureRegionBtn.disabled = true;
+		captureFullBtn.disabled = true;
 
-		// Clear the stored popup status so it resets next time
-		chrome.storage.local.set({ popupStatus: null });
+		// Show cancelling status with spinner
+		statusText.textContent = 'Cancelling request...';
+		statusEl.classList.add('show', 'loading');
+		statusEl.classList.remove('error');
 
-		// Close popup
-		window.close();
+		// Store cancelling status
+		chrome.storage.local.set({
+			popupStatus: {
+				state: 'cancelling',
+				text: 'Cancelling request...'
+			}
+		});
 	});
 
 	// Live status updates from background.js
@@ -159,22 +186,39 @@ document.addEventListener('DOMContentLoaded', () => {
 		} else if (message.action === 'hideLoading') {
 			statusEl.classList.remove('loading');
 
-			if (message.text) {
-				statusText.textContent = message.text;
-				setTimeout(() => {
-					statusEl.classList.remove('show');
-					// Close popup after showing completion
-					window.close();
-				}, 3000);
-			} else {
-				statusEl.classList.remove('show');
-				window.close();
-			}
-
 			// Reset to initial state
 			isProcessing = false;
+			const wasCancelling = isCancelling;
+			isCancelling = false;
 			captureButtons.style.display = 'flex';
 			cancelBtn.style.display = 'none';
+			// Re-enable buttons
+			captureRegionBtn.disabled = false;
+			captureFullBtn.disabled = false;
+
+			if (message.text) {
+				statusText.textContent = message.text;
+
+				// Only close popup automatically if it was a successful completion (not cancellation)
+				if (!wasCancelling && message.text !== 'Cancelled') {
+					setTimeout(() => {
+						statusEl.classList.remove('show');
+						// Close popup after showing completion
+						window.close();
+					}, 3000);
+				} else {
+					// For cancellation, just hide the status after 3 seconds but keep popup open
+					setTimeout(() => {
+						statusEl.classList.remove('show');
+					}, 3000);
+				}
+			} else {
+				statusEl.classList.remove('show');
+				// Only close if not cancelled
+				if (!wasCancelling) {
+					window.close();
+				}
+			}
 		}
 	});
 });

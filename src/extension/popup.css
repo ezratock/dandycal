@@ -88,6 +88,20 @@ p {
 	box-shadow: 0 2px 8px var(--shadow-medium);
 }
 
+#captureRegionBtn:disabled,
+#captureFullBtn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: 0 2px 6px var(--shadow-light);
+}
+
+#captureRegionBtn:disabled:hover,
+#captureFullBtn:disabled:hover {
+	transform: none;
+	box-shadow: 0 2px 6px var(--shadow-light);
+}
+
 #cancelBtn {
     background: #f78989;
     color: white;
